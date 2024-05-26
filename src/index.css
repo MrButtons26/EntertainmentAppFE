@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  *{
+    box-sizing: border-box;
+    margin: 0;
+    padding:0;
+    font-family: oswald;
+  }
+  body{
+    background: linear-gradient(to right, #e2e2e2, #c9d6ff);
+   
+  }
+  .dd{
+    box-shadow: 5px 5px 20px ;
+  }
+  .one{
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+  }
+  .one-active{
+    background: linear-gradient(to right, #5c6bc0, #512da8);
+    border-top-right-radius: 125px;
+      border-bottom-right-radius: 125px;
+   }
+  .two-active{
+background: linear-gradient(to right, #5c6bc0, #512da8);
+border-top-left-radius:125px;
+border-bottom-left-radius: 125px;
+}
+  }
+
+  
