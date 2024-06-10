@@ -6,16 +6,19 @@ import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 
 export default function TvDisplay() {
+  const [bookMarks, setBookmarks] = useState([]);
   const [bk, activeBk] = useState(false);
+  const user = useSelector((state) => state.user);
   useEffect(() => {
     let timeout = setTimeout(() => {
       activeBk(false);
     }, 1800);
+    let temp = JSON.parse(localStorage.getItem(`bookmarkTv`));
+    temp !== null && setBookmarks([...temp]);
     return () => {
       clearTimeout(timeout);
     };
   }, [bk]);
-  const user = useSelector((state) => state.user);
 
   const [movie, setmovie] = useState({});
   const [credits, setCredits] = useState({});
@@ -23,7 +26,49 @@ export default function TvDisplay() {
   const [status, setStatus] = useState(null);
   const [language, setLanguage] = useState(``);
   const { id } = useParams();
-
+  async function addBookmark(id) {
+    activeBk(!bk);
+    let temp = JSON.parse(localStorage.getItem(`bookmarkTv`));
+    if (
+      temp?.some((el) => {
+        return el.id == id;
+      })
+    ) {
+      const arr = temp.filter((el) => el.id !== id);
+      setBookmarks([...arr]);
+      localStorage.setItem(`bookmarkTv`, JSON.stringify([...arr]));
+      const response = await axios.delete("http://localhost:3000/bookmarks", {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+        data: {
+          id: id,
+          mediaType: "tv",
+        },
+      });
+      return;
+    }
+    temp =
+      temp === null
+        ? [{ id, mediaType: "tv" }]
+        : [...temp, { id, mediaType: "tv" }];
+    if (user.isLogged === true) {
+      setBookmarks([...temp]);
+      localStorage.setItem(`bookmarkTv`, JSON.stringify([...temp]));
+      const res = await axios.post(
+        `http://localhost:3000/bookmarks`,
+        {
+          id: id,
+          mediaType: "tv",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
+    }
+  }
   useEffect(() => {
     (async () => {
       try {
@@ -115,17 +160,15 @@ export default function TvDisplay() {
                   <span className="font-medium">
                     {Math.round(movie.vote_average * 10) / 10}/10
                   </span>
-                  <Link
-                    className="ml-4 "
-                    onClick={() => {
-                      activeBk(!bk);
-                    }}
+                  <button
+                    className={` text-black ml-3 ${
+                      bookMarks?.some((el) => el.id === movie.id) &&
+                      `text-green-500`
+                    }`}
+                    onClick={() => addBookmark(movie.id)}
                   >
-                    <ion-icon
-                      size="small text-black"
-                      name="add-circle-outline"
-                    ></ion-icon>
-                  </Link>
+                    <ion-icon size="small" name="add-circle-outline"></ion-icon>
+                  </button>
                 </h1>
                 <Link
                   to={`https://www.imdb.com/title/${imdb}/`}

@@ -2,10 +2,27 @@ import { useSelector } from "react-redux";
 import { useQuery } from "@tanstack/react-query";
 import getAllBookmarks from "../../services/getAllBookmarks";
 import { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useFetcher } from "react-router-dom";
 import axios from "axios";
 export default function Bookmark() {
   const user = useSelector((state) => state.user);
+  useEffect(() => {
+    (async () => {
+      const bookmarks = await axios.get(`http://localhost:3000/bookmarks`, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+      const movies = bookmarks.data.data
+        .map((el) => el.title && { id: el.id, mediaType: "movie" })
+        .filter((el) => el !== undefined);
+      const tv = bookmarks.data.data
+        .map((el) => el.name && { id: el.id, mediaType: "tv" })
+        .filter((el) => el !== undefined);
+      localStorage.setItem(`bookmarkTv`, JSON.stringify([...tv]));
+      localStorage.setItem(`bookmarkMovie`, JSON.stringify([...movies]));
+    })();
+  }, []);
   const [re, setRe] = useState(false);
 
   const { data, isLoading, isError, isPending } = useQuery({
@@ -44,7 +61,6 @@ export default function Bookmark() {
     });
     setRe(!re);
   }
-  console.log(data);
   return (
     <>
       {user.isLogged == false ? (

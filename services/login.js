@@ -1,13 +1,14 @@
 import axios from "axios";
 
-export default async function login({ username, email, password }) {
-    try {
-        const res = await axios.post(`http://localhost:3000/user/signup`, {
-            userName: "askaht",
-            email: "thpaliyal.skastht@gmail.com",
-            password: "qwertyuiop",
-        });
+export default async function login({ email, password }) {
 
-        return res.data;
-    } catch (e) { }
+    const res = await axios.post(`http://localhost:3000/user/login`, {
+        email: email,
+        password: password
+    });
+    if (res.status === 401) {
+        throw new Error(`Incorrect Password or Email`)
+    }
+    return res.data;
+
 }

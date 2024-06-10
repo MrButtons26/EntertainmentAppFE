@@ -7,7 +7,10 @@ import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 export default function MovieDisplay() {
   const [bk, activeBk] = useState(false);
+  const [bookMarks, setBookmarks] = useState([]);
   useEffect(() => {
+    let temp = JSON.parse(localStorage.getItem(`bookmarkMovie`));
+    temp !== null && setBookmarks([...temp]);
     let timeout = setTimeout(() => {
       activeBk(false);
     }, 1800);
@@ -46,6 +49,49 @@ export default function MovieDisplay() {
       }
     })();
   }, []);
+  async function addBookmark(id) {
+    activeBk(!bk);
+    let temp = JSON.parse(localStorage.getItem(`bookmarkMovie`));
+    if (
+      temp?.some((el) => {
+        return el.id == id;
+      })
+    ) {
+      const arr = temp.filter((el) => el.id !== id);
+      setBookmarks([...arr]);
+      localStorage.setItem(`bookmarkMovie`, JSON.stringify([...arr]));
+      const response = await axios.delete("http://localhost:3000/bookmarks", {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+        data: {
+          id: id,
+          mediaType: "movie",
+        },
+      });
+      return;
+    }
+    temp =
+      temp === null
+        ? [{ id, mediaType: "movie" }]
+        : [...temp, { id, mediaType: "movie" }];
+    if (user.isLogged === true) {
+      setBookmarks([...temp]);
+      localStorage.setItem(`bookmarkMovie`, JSON.stringify([...temp]));
+      const res = await axios.post(
+        `http://localhost:3000/bookmarks`,
+        {
+          id: id,
+          mediaType: "movie",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
+    }
+  }
   return (
     <>
       {bk && !user.isLogged && (
@@ -109,17 +155,18 @@ export default function MovieDisplay() {
                   <span className="font-medium">
                     {Math.round(movie.vote_average * 10) / 10}/10
                   </span>
-                  <Link
-                    className="ml-4 "
+
+                  <button
+                    className={`text-black ml-2 ${
+                      bookMarks?.some((el) => el.id === movie.id) &&
+                      `text-green-500`
+                    }`}
                     onClick={() => {
-                      activeBk(!bk);
+                      addBookmark(movie.id);
                     }}
                   >
-                    <ion-icon
-                      size="small text-black"
-                      name="add-circle-outline"
-                    ></ion-icon>
-                  </Link>
+                    <ion-icon size="small" name="add-circle-outline"></ion-icon>
+                  </button>
                 </h1>
                 <Link
                   to={`https://www.imdb.com/title/${imdb}/`}

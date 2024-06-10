@@ -6,9 +6,22 @@ import signUp from "../../services/signUp";
 import { useDispatch, useSelector } from "react-redux";
 import { logInRed } from "../userSlice";
 import { logOutRed } from "../userSlice";
-
+import login from "../../services/login";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 export default function Login({ refresh, setRefresh }) {
-  useEffect(() => {});
+  const [incorrect, setIncorrect] = useState(false);
+  const Navigate = useNavigate();
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setIncorrect(false);
+    }, 1500);
+    return () => {
+      clearTimeout(t);
+    };
+  }, [incorrect]);
+
   const Dispatch = useDispatch();
   const user = useSelector((state) => state.user);
   const [active, setActive] = useState(false);
@@ -16,6 +29,20 @@ export default function Login({ refresh, setRefresh }) {
   const [emailtaken, setEmailTaken] = useState(false);
   const { register, handleSubmit, getValues, formState, reset } = useForm();
   const { errors } = formState;
+  const { isLoading: isLoadingLogin, mutate: mutateLogin } = useMutation({
+    mutationFn: ({ email, password }) => login({ email, password }),
+    onSuccess: async (data) => {
+      Dispatch(logInRed({ _id: data.data._id, token: data.data.token }));
+      localStorage.setItem(
+        "auth",
+        JSON.stringify({ _id: data.data._id, token: data.data.token })
+      );
+    },
+    onError: (error) => {
+      console.log(error.response.data.data.error);
+      setIncorrect(true);
+    },
+  });
   const { isLoading, mutate } = useMutation({
     mutationFn: ({ username, email, password }) =>
       signUp({ username, email, password }),
@@ -32,8 +59,11 @@ export default function Login({ refresh, setRefresh }) {
   });
 
   function onsubmission({ username, email, password }) {
+    console.log(12);
     mutate({ username, email, password });
     setEmailTaken(false);
+    reset();
+    Navigate("/");
   }
   function onError(err) {}
 
@@ -49,7 +79,10 @@ export default function Login({ refresh, setRefresh }) {
 
   const { errors: error } = formStateLogin;
 
-  function onSubmissionLogin(data) {}
+  function onSubmissionLogin({ email, password }) {
+    mutateLogin({ email, password });
+    resetlogin();
+  }
 
   return (
     <>
@@ -117,6 +150,7 @@ export default function Login({ refresh, setRefresh }) {
                         required: "This field is required",
                       })}
                     />
+                    {incorrect && <h1>Incorrect Email or Password</h1>}
                     {error?.password?.message && (
                       <h1 className="text-sm px-2">{error.password.message}</h1>
                     )}
