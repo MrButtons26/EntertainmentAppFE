@@ -4,7 +4,24 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
 import { NavLink } from "react-router-dom";
+import { useSelector } from "react-redux";
+import axios from "axios";
+
 export default function Tv() {
+  const user = useSelector((state) => state.user);
+  const [bookMarks, setBookmarks] = useState([]);
+  const [bk, activeBk] = useState(false);
+  useEffect(() => {
+    let timeout = setTimeout(() => {
+      activeBk(false);
+    }, 1800);
+    let temp = JSON.parse(localStorage.getItem(`bookmarkTv`));
+    temp !== null && setBookmarks([...temp]);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [bk]);
+
   const [active, setActive] = useState(-1);
   const nextPage = useRef(null);
   const observer = new IntersectionObserver((entries) => {
@@ -22,6 +39,49 @@ export default function Tv() {
       observer.unobserve(nextPage.current);
     };
   });
+  async function addBookmark(id) {
+    activeBk(!bk);
+    let temp = JSON.parse(localStorage.getItem(`bookmarkTv`));
+    if (
+      temp?.some((el) => {
+        return el.id == id;
+      })
+    ) {
+      const arr = temp.filter((el) => el.id !== id);
+      setBookmarks([...arr]);
+      localStorage.setItem(`bookmarkTv`, JSON.stringify([...arr]));
+      const response = await axios.delete("http://localhost:3000/bookmarks", {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+        data: {
+          id: id,
+          mediaType: "tv",
+        },
+      });
+      return;
+    }
+    temp =
+      temp === null
+        ? [{ id, mediaType: "tv" }]
+        : [...temp, { id, mediaType: "tv" }];
+    if (user.isLogged === true) {
+      setBookmarks([...temp]);
+      localStorage.setItem(`bookmarkTv`, JSON.stringify([...temp]));
+      const res = await axios.post(
+        `http://localhost:3000/bookmarks`,
+        {
+          id: id,
+          mediaType: "tv",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
+    }
+  }
   const {
     data,
     error,
@@ -76,6 +136,18 @@ export default function Tv() {
     <p>Error: {error.message}</p>
   ) : (
     <>
+      {" "}
+      {bk && !user.isLogged && (
+        <div className="flex justify-center relative">
+          <h1
+            className={`bookmark-error ${
+              bk && !user.isLogged && `bookmark-error-active`
+            }`}
+          >
+            Please Login to Bookmark
+          </h1>
+        </div>
+      )}
       <SearchBar></SearchBar>
       <h1 className="text-3xl font-thin pl-12">
         Top Rated <span className=" text-4xl font-semibold">TV</span>
@@ -123,12 +195,18 @@ export default function Tv() {
                     >
                       {Math.trunc(movie.vote_average)}/10
                     </h1>
-                    <Link>
+                    <button
+                      className={` ${
+                        bookMarks?.some((el) => el.id === movie.id) &&
+                        `text-green-500`
+                      }`}
+                      onClick={() => addBookmark(movie.id)}
+                    >
                       <ion-icon
                         size="small"
                         name="add-circle-outline"
                       ></ion-icon>
-                    </Link>
+                    </button>
                     <NavLink to={`/tvshows/${movie.id}`}>
                       <ion-icon size="small" name="play-outline"></ion-icon>
                     </NavLink>

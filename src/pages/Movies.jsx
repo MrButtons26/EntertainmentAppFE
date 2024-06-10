@@ -1,10 +1,27 @@
 import getAllMovies from "../../services/getAllMovies";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
 import { NavLink } from "react-router-dom";
+import { useSelector } from "react-redux";
+import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
+import getAllBookmarks from "../../services/getAllBookmarks";
 export default function Movies() {
+  const user = useSelector((state) => state.user);
+  const [bookMarks, setBookmarks] = useState([]);
+  const [bk, activeBk] = useState(false);
+  useEffect(() => {
+    let timeout = setTimeout(() => {
+      activeBk(false);
+    }, 1800);
+    let temp = JSON.parse(localStorage.getItem(`bookmarkMovie`));
+    temp !== null && setBookmarks([...temp]);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [bk]);
   const [active, setActive] = useState(-1);
   const nextPage = useRef(null);
   const observer = new IntersectionObserver((entries) => {
@@ -23,6 +40,49 @@ export default function Movies() {
       observer.unobserve(nextPage.current);
     };
   });
+  async function addBookmark(id) {
+    activeBk(!bk);
+    let temp = JSON.parse(localStorage.getItem(`bookmarkMovie`));
+    if (
+      temp?.some((el) => {
+        return el.id == id;
+      })
+    ) {
+      const arr = temp.filter((el) => el.id !== id);
+      setBookmarks([...arr]);
+      localStorage.setItem(`bookmarkMovie`, JSON.stringify([...arr]));
+      const response = await axios.delete("http://localhost:3000/bookmarks", {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+        data: {
+          id: id,
+          mediaType: "movie",
+        },
+      });
+      return;
+    }
+    temp =
+      temp === null
+        ? [{ id, mediaType: "movie" }]
+        : [...temp, { id, mediaType: "movie" }];
+    if (user.isLogged === true) {
+      setBookmarks([...temp]);
+      localStorage.setItem(`bookmarkMovie`, JSON.stringify([...temp]));
+      const res = await axios.post(
+        `http://localhost:3000/bookmarks`,
+        {
+          id: id,
+          mediaType: "movie",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
+    }
+  }
   const {
     data,
     error,
@@ -77,6 +137,17 @@ export default function Movies() {
     <p>Error: {error.message}</p>
   ) : (
     <>
+      {bk && !user.isLogged && (
+        <div className="flex justify-center relative">
+          <h1
+            className={`bookmark-error ${
+              bk && !user.isLogged && `bookmark-error-active`
+            }`}
+          >
+            Please Login to Bookmark
+          </h1>
+        </div>
+      )}
       <SearchBar></SearchBar>
       <h1 className="text-3xl font-thin pl-10">
         Top Rated <span className=" text-4xl font-semibold">Movies</span>
@@ -124,12 +195,20 @@ export default function Movies() {
                     >
                       {Math.round(movie.vote_average * 10) / 10}/10
                     </h1>
-                    <Link>
+                    <button
+                      className={` ${
+                        bookMarks?.some((el) => el.id === movie.id) &&
+                        `text-green-500`
+                      }`}
+                      onClick={() => {
+                        addBookmark(movie.id);
+                      }}
+                    >
                       <ion-icon
                         size="small"
                         name="add-circle-outline"
                       ></ion-icon>
-                    </Link>
+                    </button>
                     <NavLink to={`/movies/${movie.id}`}>
                       <ion-icon size="small" name="play-outline"></ion-icon>
                     </NavLink>

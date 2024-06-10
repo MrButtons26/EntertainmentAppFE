@@ -2,9 +2,21 @@ import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 import { Link } from "react-router-dom";
 export default function MovieDisplay() {
+  const [bk, activeBk] = useState(false);
+  useEffect(() => {
+    let timeout = setTimeout(() => {
+      activeBk(false);
+    }, 1800);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [bk]);
+  const user = useSelector((state) => state.user);
+
   const [movie, setmovie] = useState({});
   const [status, setStatus] = useState(null);
   const [credits, setCredits] = useState({});
@@ -36,8 +48,19 @@ export default function MovieDisplay() {
   }, []);
   return (
     <>
+      {bk && !user.isLogged && (
+        <div className="flex justify-center relative">
+          <h1
+            className={`bookmark-error ${
+              bk && !user.isLogged && `bookmark-error-active`
+            }`}
+          >
+            Please Login to Bookmark
+          </h1>
+        </div>
+      )}
       {status === 200 ? (
-        <div className=" items-center flex flex-col">
+        <div className=" items-center flex flex-col mt-4">
           <div className=" flex relative  mt-10">
             <img
               className=" h-[550px] min-w-[1280px] rounded-2xl"
@@ -86,7 +109,12 @@ export default function MovieDisplay() {
                   <span className="font-medium">
                     {Math.round(movie.vote_average * 10) / 10}/10
                   </span>
-                  <Link className="ml-4 ">
+                  <Link
+                    className="ml-4 "
+                    onClick={() => {
+                      activeBk(!bk);
+                    }}
+                  >
                     <ion-icon
                       size="small text-black"
                       name="add-circle-outline"

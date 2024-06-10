@@ -1,6 +1,8 @@
 import { Link, useParams } from "react-router-dom";
 import { useState } from "react";
+import { useSelector } from "react-redux";
 export default function Navbar() {
+  const user = useSelector((state) => state.user);
   const [navNum, setNavNum] = useState(-1);
   return (
     <div className=" mt-5 flex justify-center">
@@ -76,7 +78,11 @@ export default function Navbar() {
           className=""
           to={`/login`}
         >
-          <div className={`icons ${navNum === 5 ? `icons-active` : ``}`}>
+          <div
+            className={`icons  ${navNum === 5 ? `icons-active` : ``} ${
+              user.isLogged && "text-green-600"
+            }`}
+          >
             <ion-icon size="large" name="person-outline"></ion-icon>
           </div>
           <h1

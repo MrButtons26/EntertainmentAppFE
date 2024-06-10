@@ -10,6 +10,11 @@ import MovieDisplay from "./pages/MovieDisplay";
 import Tv from "./pages/Tv";
 import TvDisplay from "./pages/TvDisplay";
 import SearchPage from "./pages/SearchPage";
+import { useDispatch } from "react-redux";
+import { logInRed } from "./userSlice";
+import { logOutRed } from "./userSlice";
+import Bookmark from "./pages/Bookmark";
+import { useState } from "react";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -18,14 +23,28 @@ const queryClient = new QueryClient({
   },
 });
 function App() {
+  const [refresh, setRefresh] = useState(false);
+  const Dispatch = useDispatch();
+  localStorage.getItem("bookmarkMovie") === null &&
+    localStorage.setItem("bookmarkMovie", JSON.stringify([]));
+  localStorage.getItem("bookmarkTv") === null &&
+    localStorage.setItem("bookmarkTv", JSON.stringify([]));
+  const data = localStorage.getItem("auth");
+  if (data) {
+    Dispatch(logInRed(JSON.parse(data)));
+  }
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Navbar></Navbar>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
+          <Route
+            path="/login"
+            element={<Login refresh={refresh} setRefresh={setRefresh} />}
+          />
           <Route path="/movies" element={<Movies />} />
+          <Route path="/bookmarks" element={<Bookmark />} />
           <Route path="/movies/:id" element={<MovieDisplay />} />
           <Route path="/tvshows/:id" element={<TvDisplay />} />
           <Route path="/search/:movieName" element={<SearchPage />} />
